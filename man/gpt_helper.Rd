@@ -42,12 +42,10 @@ Sys.setenv(OPENAI_API_KEY = "...")
 
 objects <- dplyr::tibble(user = c("chair", "table", "book", "pen", "lamp", "phone", "keyboard", "door", "window", "cup"))
 
-prompt <- paste("write a one sentence description")
-
 gpt_helper(
   objects,
   objects$user,
-  prompt
+  "write a one sentence description"
 )
 
 objects_described <- readRDS("gpt_output.Rds")
