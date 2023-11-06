@@ -7,6 +7,8 @@
 #' @param prompt A system prompt for the GPT model.
 #' @param batch_size The number of rows to process in each batch. Default is 10.
 #' @param retries The maximum number of retries in case of errors. Default is 3.
+#' @param model A GPT model. Default is "gpt-3.5-turbo".
+#' @param temperature A temperature for the GPT model. Default is 0.1.
 #' @return Writes the GPT completion to \code{gpt_output.RDS}.
 #' @export
 #' @examples
@@ -18,44 +20,55 @@
 #'
 #' prompt <- paste("write a one sentence description")
 #'
-#' gpt_helper(objects,
-#'            objects$user,
-#'            prompt)
+#' gpt_helper(
+#'   objects,
+#'   objects$user,
+#'   prompt
+#' )
 #'
 #' objects_described <- readRDS("gpt_output.Rds")
-gpt_helper <- function(df, input, prompt, batch_size = 10, retries = 3) {
-
+gpt_helper <- function(df, input, prompt, batch_size = 10, retries = 3,
+                       model = "gpt-3.5-turbo",
+                       temperature = .1) {
   vector_name <- sub(".+\\$", "", deparse(substitute(input)))
   num_batches <- ceiling(nrow(df) / batch_size)
 
-  for(batch_num in 0:(num_batches - 1)) {
+  for (batch_num in 0:(num_batches - 1)) {
     start_row <- batch_num * batch_size + 1
     end_row <- min(((batch_num + 1) * batch_size), nrow(df))
 
     retry_flag <- TRUE
     counter <- 1
-    while(retry_flag && (counter <= retries)) {
-      tryCatch({
-        output_batch <- batch_mutate(df[start_row:end_row, ],
-                                     df_col = input[start_row:end_row],
-                                     system_prompt = prompt,
-                                     batch_size = batch_size)
-        temp_output <- if (exists("output")) rbind(output, output_batch) else output_batch
-        output <- temp_output[!duplicated(temp_output[[vector_name]]), ] # Remove duplicates after each batch
+    while (retry_flag && (counter <= retries)) {
+      tryCatch(
+        {
+          output_batch <- batch_mutate(df[start_row:end_row, ],
+            df_col = input[start_row:end_row],
+            system_prompt = prompt,
+            batch_size = batch_size,
+            model = model,
+            temperature = temperature
+          )
+          temp_output <- if (exists("output")) rbind(output, output_batch) else output_batch
+          output <- temp_output[!duplicated(temp_output[[vector_name]]), ] # Remove duplicates after each batch
 
-        save_progress(output, batch_num)  # Save progress, only save if no error to this point
-        cat("Completed batch", batch_num + 1, "- Total rows processed:", nrow(output), "\n")
-        retry_flag <- FALSE
-      }, error = function(e) {
-        if (counter >= retries) {
-          stop("Maximum retries limit reached.")
-        } else {
-          print(paste("Error occurred, trying again. Data processed up to row", end_row, ": ",
-                      conditionMessage(e), " Attempt: ", counter))
-          counter <- counter + 1
-          Sys.sleep(runif(1, min = 2, max = 5))
+          save_progress(output, batch_num) # Save progress, only save if no error to this point
+          cat("Completed batch", batch_num + 1, "- Total rows processed:", nrow(output), "\n")
+          retry_flag <- FALSE
+        },
+        error = function(e) {
+          if (counter >= retries) {
+            stop("Maximum retries limit reached.")
+          } else {
+            print(paste(
+              "Error occurred, trying again. Data processed up to row", end_row, ": ",
+              conditionMessage(e), " Attempt: ", counter
+            ))
+            counter <- counter + 1
+            Sys.sleep(runif(1, min = 2, max = 5))
+          }
         }
-      })
+      )
     }
     if (nrow(output) == nrow(df)) {
       cat("All rows processed.\n")
@@ -77,9 +90,7 @@ gpt_helper <- function(df, input, prompt, batch_size = 10, retries = 3) {
 #' @param model A GPT model. Default is "gpt-3.5-turbo".
 #' @param temperature A temperature for the GPT model. Default is 0.1.
 #' @return A data frame with the mutated row.
-mutate_row <- function(df, df_col, system_prompt,
-                       model = "gpt-3.5-turbo",
-                       temperature = .1) {
+mutate_row <- function(df, df_col, system_prompt, model, temperature) {
   content_input <- as.character(df_col)
 
   if (length(content_input) > 0) {
@@ -98,21 +109,22 @@ mutate_row <- function(df, df_col, system_prompt,
       )
     )
 
-    tryCatch({
-      content_output <- completion$choices$message.content
+    tryCatch(
+      {
+        content_output <- completion$choices$message.content
 
-      if (!is.null(content_output)) {
-        df$gpt_output <- rep(content_output, length.out = 1)
-      } else {
-        message("Error: content_output returned NULL!")
+        if (!is.null(content_output)) {
+          df$gpt_output <- rep(content_output, length.out = 1)
+        } else {
+          message("Error: content_output returned NULL!")
+          df$gpt_output <- NA
+        }
+      },
+      error = function(e) {
+        message("Error occurred: ", conditionMessage(e))
         df$gpt_output <- NA
       }
-
-    }, error = function(e) {
-      message("Error occurred: ", conditionMessage(e))
-      df$gpt_output <- NA
-    })
-
+    )
   } else {
     df$gpt_output <- NA
   }
@@ -128,8 +140,8 @@ mutate_row <- function(df, df_col, system_prompt,
 #' @param output The output to be saved.
 #' @param last_completed_batch The last completed batch to be saved.
 save_progress <- function(output, last_completed_batch) {
-  saveRDS(output, file="gpt_output.RDS")
-  saveRDS(last_completed_batch, file="last_completed_batch.RDS")
+  saveRDS(output, file = "gpt_output.RDS")
+  saveRDS(last_completed_batch, file = "last_completed_batch.RDS")
 }
 
 #' Load Saved Progress
@@ -140,9 +152,11 @@ save_progress <- function(output, last_completed_batch) {
 #' @return A list containing the loaded output and last completed batch,
 #' or NULL if no existing saved progress is found.
 load_saved_progress <- function() {
-  if(file.exists("gpt_output.RDS") && file.exists("last_completed_batch.RDS")) {
-    return(list(output = readRDS(file="gpt_output.RDS"),
-                last_completed_batch = readRDS(file="last_completed_batch.RDS")))
+  if (file.exists("gpt_output.RDS") && file.exists("last_completed_batch.RDS")) {
+    return(list(
+      output = readRDS(file = "gpt_output.RDS"),
+      last_completed_batch = readRDS(file = "last_completed_batch.RDS")
+    ))
   } else {
     warning("No existing saved progress found.")
     return(NULL)
@@ -159,8 +173,10 @@ load_saved_progress <- function() {
 #' @param df_col A column from the data frame.
 #' @param system_prompt A system prompt for the GPT model.
 #' @param batch_size The number of rows to process in each batch. Default is 100.
+#' @param model A GPT model. Default is "gpt-3.5-turbo".
+#' @param temperature A temperature for the GPT model. Default is 0.1.
 #' @return The final output data frame after processing all the rows.
-batch_mutate <- function(df, df_col, system_prompt, batch_size = 100) {
+batch_mutate <- function(df, df_col, system_prompt, batch_size, model, temperature) {
   out <- vector("list", 0)
   rows_processed <- 0
   total_rows <- nrow(df)
@@ -171,7 +187,10 @@ batch_mutate <- function(df, df_col, system_prompt, batch_size = 100) {
     batch_out <- vector("list", end_row - start_row + 1)
 
     for (i in start_row:end_row) {
-      batch_out[[i - start_row + 1]] <- mutate_row(df[i,], df_col[i], system_prompt)
+      batch_out[[i - start_row + 1]] <- mutate_row(df[i, ], df_col[i], system_prompt,
+        model = model,
+        temperature = temperature
+      )
       cat("Processed up to row", i, "\n")
       Sys.sleep(runif(1, min = 0.1, max = 0.5))
     }

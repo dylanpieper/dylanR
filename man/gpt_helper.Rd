@@ -4,7 +4,15 @@
 \alias{gpt_helper}
 \title{GPT Helper}
 \usage{
-gpt_helper(df, input, prompt, batch_size = 10, retries = 3)
+gpt_helper(
+  df,
+  input,
+  prompt,
+  batch_size = 10,
+  retries = 3,
+  model = "gpt-3.5-turbo",
+  temperature = 0.1
+)
 }
 \arguments{
 \item{df}{A data frame (to preserve all columns).}
@@ -16,6 +24,10 @@ gpt_helper(df, input, prompt, batch_size = 10, retries = 3)
 \item{batch_size}{The number of rows to process in each batch. Default is 10.}
 
 \item{retries}{The maximum number of retries in case of errors. Default is 3.}
+
+\item{model}{A GPT model. Default is "gpt-3.5-turbo".}
+
+\item{temperature}{A temperature for the GPT model. Default is 0.1.}
 }
 \value{
 Writes the GPT completion to \code{gpt_output.RDS}.
@@ -32,9 +44,11 @@ objects <- dplyr::tibble(user = c("chair", "table", "book", "pen", "lamp", "phon
 
 prompt <- paste("write a one sentence description")
 
-gpt_helper(objects,
-           objects$user,
-           prompt)
+gpt_helper(
+  objects,
+  objects$user,
+  prompt
+)
 
 objects_described <- readRDS("gpt_output.Rds")
 }

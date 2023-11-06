@@ -4,13 +4,7 @@
 \alias{mutate_row}
 \title{Mutate Row}
 \usage{
-mutate_row(
-  df,
-  df_col,
-  system_prompt,
-  model = "gpt-3.5-turbo",
-  temperature = 0.1
-)
+mutate_row(df, df_col, system_prompt, model, temperature)
 }
 \arguments{
 \item{df}{A data frame.}

@@ -4,7 +4,7 @@
 \alias{batch_mutate}
 \title{Batch Mutate}
 \usage{
-batch_mutate(df, df_col, system_prompt, batch_size = 100)
+batch_mutate(df, df_col, system_prompt, batch_size, model, temperature)
 }
 \arguments{
 \item{df}{A data frame.}
@@ -14,6 +14,10 @@ batch_mutate(df, df_col, system_prompt, batch_size = 100)
 \item{system_prompt}{A system prompt for the GPT model.}
 
 \item{batch_size}{The number of rows to process in each batch. Default is 100.}
+
+\item{model}{A GPT model. Default is "gpt-3.5-turbo".}
+
+\item{temperature}{A temperature for the GPT model. Default is 0.1.}
 }
 \value{
 The final output data frame after processing all the rows.
