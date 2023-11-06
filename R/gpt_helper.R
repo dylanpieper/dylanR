@@ -1,32 +1,45 @@
 #' GPT Helper
 #'
-#' This function applies the batch_mutate function to a table in batches,
-#' with configurable retries in case of errors. It saves the progress and
-#' prints the completion status after each batch.
+#' This function uses OpenAI's GPT-3.5-Turbo model to generate a completion inside of a data frame.
 #'
-#' @param tbl A table.
-#' @param input An input vector.
+#' @param df A data frame (to preserve all columns).
+#' @param input An input vector from \code{df} (to generate the completion).
 #' @param prompt A system prompt for the GPT model.
 #' @param batch_size The number of rows to process in each batch. Default is 10.
-#' @param retries The maximum number of retries in case of errors. Default is 1.
+#' @param retries The maximum number of retries in case of errors. Default is 3.
+#' @return Writes the GPT completion to \code{gpt_output.RDS}.
 #' @export
-gpt_helper <- function(tbl, input, prompt, batch_size = 10, retries = 1) {
+#' @examples
+#' library(dylanR)
+#'
+#' Sys.setenv(OPENAI_API_KEY = "...")
+#'
+#' objects <- dplyr::tibble(user = c("chair", "table", "book", "pen", "lamp", "phone", "keyboard", "door", "window", "cup"))
+#'
+#' prompt <- paste("write a one sentence description")
+#'
+#' gpt_helper(objects,
+#'            objects$user,
+#'            prompt)
+#'
+#' objects_described <- readRDS("gpt_output.Rds")
+gpt_helper <- function(df, input, prompt, batch_size = 10, retries = 3) {
 
-  vector_name <- sub(".+\\$", "", deparse(substitute(test_df$col1)))
-  num_batches <- ceiling(nrow(tbl) / batch_size)
+  vector_name <- sub(".+\\$", "", deparse(substitute(input)))
+  num_batches <- ceiling(nrow(df) / batch_size)
 
   for(batch_num in 0:(num_batches - 1)) {
     start_row <- batch_num * batch_size + 1
-    end_row <- min(((batch_num + 1) * batch_size), nrow(tbl))
+    end_row <- min(((batch_num + 1) * batch_size), nrow(df))
 
     retry_flag <- TRUE
     counter <- 1
     while(retry_flag && (counter <= retries)) {
       tryCatch({
-        output_batch <- batch_mutate(tbl[start_row:end_row, ],
-                                  df_col = input[start_row:end_row],
-                                  system_prompt = prompt,
-                                  batch_size = batch_size)
+        output_batch <- batch_mutate(df[start_row:end_row, ],
+                                     df_col = input[start_row:end_row],
+                                     system_prompt = prompt,
+                                     batch_size = batch_size)
         temp_output <- if (exists("output")) rbind(output, output_batch) else output_batch
         output <- temp_output[!duplicated(temp_output[[vector_name]]), ] # Remove duplicates after each batch
 
@@ -44,7 +57,7 @@ gpt_helper <- function(tbl, input, prompt, batch_size = 10, retries = 1) {
         }
       })
     }
-    if (nrow(output) == nrow(tbl)) {
+    if (nrow(output) == nrow(df)) {
       cat("All rows processed.\n")
       break
     }
@@ -138,7 +151,7 @@ load_saved_progress <- function() {
 
 #' Batch Mutate
 #'
-#' This function applies the mutate_row function in batches to a data frame.
+#' This function applies the \code{mutate_row} function in batches to a data frame.
 #' It processes a specified number of rows at a time and saves the progress.
 #' It returns the final output data frame after all the rows have been processed.
 #'
