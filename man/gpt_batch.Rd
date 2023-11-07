@@ -9,7 +9,7 @@ gpt_batch(
   input,
   prompt,
   batch_size = 10,
-  retries = 1,
+  attempts = 1,
   model = "gpt-3.5-turbo-1106",
   temperature = 0.1
 )
@@ -23,7 +23,7 @@ gpt_batch(
 
 \item{batch_size}{The number of rows to process in each batch. Default is 10.}
 
-\item{retries}{The maximum number of retries in case of errors. Default is 1.}
+\item{attempts}{The maximum number of attempts in case of errors. Default is 1.}
 
 \item{model}{A GPT model. Default is "gpt-3.5-turbo-1106".}
 

@@ -8,7 +8,7 @@
 #' @param input An input vector from \code{df} (to generate the completion).
 #' @param prompt A system prompt for the GPT model.
 #' @param batch_size The number of rows to process in each batch. Default is 10.
-#' @param retries The maximum number of retries in case of errors. Default is 1.
+#' @param attempts The maximum number of attempts in case of errors. Default is 1.
 #' @param model A GPT model. Default is "gpt-3.5-turbo-1106".
 #' @param temperature A temperature for the GPT model. Default is 0.1.
 #' @return Writes the GPT completion to \code{gpt_output.RDS}. Writes the progress to \code{last_completed_batch.RDS}.
@@ -27,7 +27,7 @@
 #' )
 #'
 #' objects_described <- readRDS("gpt_output.Rds")
-gpt_batch <- function(df, input, prompt, batch_size = 10, retries = 1,
+gpt_batch <- function(df, input, prompt, batch_size = 10, attempts = 1,
                        model = "gpt-3.5-turbo-1106",
                        temperature = .1) {
   progress <- load_saved_progress()
@@ -50,7 +50,7 @@ gpt_batch <- function(df, input, prompt, batch_size = 10, retries = 1,
 
     retry_flag <- TRUE
     counter <- 1
-    while (retry_flag && (counter <= retries)) {
+    while (retry_flag && (counter <= attempts)) {
       tryCatch(
         {
           output_batch <- batch_mutate(df[start_row:end_row, ],
@@ -68,8 +68,8 @@ gpt_batch <- function(df, input, prompt, batch_size = 10, retries = 1,
           retry_flag <- FALSE
         },
         error = function(e) {
-          if (counter >= retries) {
-            stop("Maximum retries limit reached")
+          if (counter >= attempts) {
+            stop("Maximum attempts limit reached")
           } else {
             print(paste(
               "Error occurred, trying again. Data processed up to row", end_row, ": ",
