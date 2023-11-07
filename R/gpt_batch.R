@@ -1,15 +1,17 @@
-#' GPT Helper
+#' GPT Batch
 #'
-#' This function uses OpenAI's GPT-3.5-Turbo model to generate a completion inside of a data frame.
+#' Using OpenAI's GPT models, generate a completion in a new data frame column called \code{gpt_output}.
+#' Completions are batched for error handling and saving your progress,
+#' For API etiquette, there is a 2-5s delay between each completion and 30-60s delay between each batch.
 #'
 #' @param df A data frame (to preserve all columns).
 #' @param input An input vector from \code{df} (to generate the completion).
 #' @param prompt A system prompt for the GPT model.
 #' @param batch_size The number of rows to process in each batch. Default is 10.
-#' @param retries The maximum number of retries in case of errors. Default is 3.
-#' @param model A GPT model. Default is "gpt-3.5-turbo".
+#' @param retries The maximum number of retries in case of errors. Default is 1.
+#' @param model A GPT model. Default is "gpt-3.5-turbo-1106".
 #' @param temperature A temperature for the GPT model. Default is 0.1.
-#' @return Writes the GPT completion to \code{gpt_output.RDS}.
+#' @return Writes the GPT completion to \code{gpt_output.RDS}. Writes the progress to \code{last_completed_batch.RDS}.
 #' @export
 #' @examples
 #' library(dylanR)
@@ -18,22 +20,33 @@
 #'
 #' objects <- dplyr::tibble(user = c("chair", "table", "book", "pen", "lamp", "phone", "keyboard", "door", "window", "cup"))
 #'
-#' gpt_helper(
+#' gpt_batch(
 #'   objects,
 #'   objects$user,
 #'   "write a one sentence description"
 #' )
 #'
 #' objects_described <- readRDS("gpt_output.Rds")
-gpt_helper <- function(df, input, prompt, batch_size = 10, retries = 3,
-                       model = "gpt-3.5-turbo",
+gpt_batch <- function(df, input, prompt, batch_size = 10, retries = 1,
+                       model = "gpt-3.5-turbo-1106",
                        temperature = .1) {
+  progress <- load_saved_progress()
+
+  if (!is.null(progress)) {
+    output <- progress$output
+    last_completed_batch <- progress$last_completed_batch
+  } else {
+    output <- NULL
+    last_completed_batch <- 0
+  }
+
   vector_name <- sub(".+\\$", "", deparse(substitute(input)))
   num_batches <- ceiling(nrow(df) / batch_size)
 
-  for (batch_num in 0:(num_batches - 1)) {
-    start_row <- batch_num * batch_size + 1
-    end_row <- min(((batch_num + 1) * batch_size), nrow(df))
+  for (batch_num in (last_completed_batch+1):num_batches) {
+    cat("Starting batch ", batch_num, "\n")  ## Changed to batch_num instead of batch_num + 1
+    start_row <- (batch_num - 1) * batch_size + 1
+    end_row <- min(((batch_num) * batch_size), nrow(df))  ## Changed to (batch_num) instead of (batch_num + 1)
 
     retry_flag <- TRUE
     counter <- 1
@@ -41,26 +54,26 @@ gpt_helper <- function(df, input, prompt, batch_size = 10, retries = 3,
       tryCatch(
         {
           output_batch <- batch_mutate(df[start_row:end_row, ],
-            df_col = input[start_row:end_row],
-            system_prompt = prompt,
-            batch_size = batch_size,
-            model = model,
-            temperature = temperature
+                                       df_col = input[start_row:end_row],
+                                       system_prompt = prompt,
+                                       batch_size = batch_size,
+                                       model = model,
+                                       temperature = temperature
           )
           temp_output <- if (exists("output")) rbind(output, output_batch) else output_batch
-          output <- temp_output[!duplicated(temp_output[[vector_name]]), ] # Remove duplicates after each batch
+          output <- temp_output[!duplicated(temp_output[[vector_name]]), ]
 
-          save_progress(output, batch_num) # Save progress, only save if no error to this point
-          cat("Completed batch", batch_num + 1, "- Total rows processed:", nrow(output), "\n")
+          save_progress(output, batch_num)
+          cat("Completed batch", batch_num, "with", nrow(output), "total rows processed", "\n\n") # Changed to batch_num instead of batch_num + 1
           retry_flag <- FALSE
         },
         error = function(e) {
           if (counter >= retries) {
-            stop("Maximum retries limit reached.")
+            stop("Maximum retries limit reached")
           } else {
             print(paste(
               "Error occurred, trying again. Data processed up to row", end_row, ": ",
-              conditionMessage(e), " Attempt: ", counter
+              conditionMessage(e), ". Attempt: ", counter, "."
             ))
             counter <- counter + 1
             Sys.sleep(runif(1, min = 2, max = 5))
@@ -69,7 +82,7 @@ gpt_helper <- function(df, input, prompt, batch_size = 10, retries = 3,
       )
     }
     if (nrow(output) == nrow(df)) {
-      cat("All rows processed.\n")
+      cat("All rows processed\n")
       break
     }
   }
@@ -114,7 +127,7 @@ mutate_row <- function(df, df_col, system_prompt, model, temperature) {
         if (!is.null(content_output)) {
           df$gpt_output <- rep(content_output, length.out = 1)
         } else {
-          message("Error: content_output returned NULL!")
+          message("Error: content_output returned NULL")
           df$gpt_output <- NA
         }
       },
@@ -156,7 +169,7 @@ load_saved_progress <- function() {
       last_completed_batch = readRDS(file = "last_completed_batch.RDS")
     ))
   } else {
-    warning("No existing saved progress found.")
+    warning("No existing saved progress found")
     return(NULL)
   }
 }
@@ -189,7 +202,7 @@ batch_mutate <- function(df, df_col, system_prompt, batch_size, model, temperatu
         model = model,
         temperature = temperature
       )
-      cat("Processed up to row", i, "\n")
+      cat("Processed row", i, "\n")
       Sys.sleep(runif(1, min = 0.1, max = 0.5))
     }
 
@@ -200,14 +213,4 @@ batch_mutate <- function(df, df_col, system_prompt, batch_size, model, temperatu
   Sys.sleep(runif(1, min = 30, max = 60))
   out <- do.call(rbind, out)
   return(out)
-}
-
-progress <- load_saved_progress()
-
-if (!is.null(progress)) {
-  output <- progress$output
-  last_completed_batch <- progress$last_completed_batch
-} else {
-  output <- NULL
-  last_completed_batch <- 0
 }
