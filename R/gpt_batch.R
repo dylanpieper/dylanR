@@ -44,9 +44,9 @@ gpt_batch <- function(df, input, prompt, batch_size = 10, retries = 1,
   num_batches <- ceiling(nrow(df) / batch_size)
 
   for (batch_num in (last_completed_batch+1):num_batches) {
-    cat("Starting batch ", batch_num, "\n")  ## Changed to batch_num instead of batch_num + 1
+    cat("Starting batch ", batch_num, "\n")
     start_row <- (batch_num - 1) * batch_size + 1
-    end_row <- min(((batch_num) * batch_size), nrow(df))  ## Changed to (batch_num) instead of (batch_num + 1)
+    end_row <- min(((batch_num) * batch_size), nrow(df))
 
     retry_flag <- TRUE
     counter <- 1
@@ -64,7 +64,7 @@ gpt_batch <- function(df, input, prompt, batch_size = 10, retries = 1,
           output <- temp_output[!duplicated(temp_output[[vector_name]]), ]
 
           save_progress(output, batch_num)
-          cat("Completed batch", batch_num, "with", nrow(output), "total rows processed", "\n\n") # Changed to batch_num instead of batch_num + 1
+          cat("Completed batch", batch_num, "with", nrow(output), "total rows processed", "\n\n")
           retry_flag <- FALSE
         },
         error = function(e) {
