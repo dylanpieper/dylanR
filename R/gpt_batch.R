@@ -1,11 +1,11 @@
 #' GPT Batch
 #'
 #' Using OpenAI's GPT models, generate a completion in a new data frame column called \code{gpt_output}.
-#' Completions are batched for error handling and saving your progress,
+#' Completions are batched for handling errors and saving your progress.
 #' For API etiquette, there is a 2-5s delay between each completion and 30-60s delay between each batch.
 #'
 #' @param df A data frame (to preserve all columns).
-#' @param input An input vector from \code{df} (to generate the completion).
+#' @param input An input vector from \code{df} (to generate the completions).
 #' @param prompt A system prompt for the GPT model.
 #' @param batch_size The number of rows to process in each batch. Default is 10.
 #' @param attempts The maximum number of attempts in case of errors. Default is 1.
@@ -26,7 +26,7 @@
 #'   "write a one sentence description"
 #' )
 #'
-#' objects_described <- readRDS("gpt_output.Rds")
+#' objects_described <- readRDS("gpt_output.RDS")
 gpt_batch <- function(df, input, prompt, batch_size = 10, attempts = 1,
                        model = "gpt-3.5-turbo-1106",
                        temperature = .1) {

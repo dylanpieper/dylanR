@@ -17,7 +17,7 @@ gpt_batch(
 \arguments{
 \item{df}{A data frame (to preserve all columns).}
 
-\item{input}{An input vector from \code{df} (to generate the completion).}
+\item{input}{An input vector from \code{df} (to generate the completions).}
 
 \item{prompt}{A system prompt for the GPT model.}
 
@@ -34,7 +34,7 @@ Writes the GPT completion to \code{gpt_output.RDS}. Writes the progress to \code
 }
 \description{
 Using OpenAI's GPT models, generate a completion in a new data frame column called \code{gpt_output}.
-Completions are batched for error handling and saving your progress,
+Completions are batched for handling errors and saving your progress.
 For API etiquette, there is a 2-5s delay between each completion and 30-60s delay between each batch.
 }
 \examples{
@@ -50,5 +50,5 @@ gpt_batch(
   "write a one sentence description"
 )
 
-objects_described <- readRDS("gpt_output.Rds")
+objects_described <- readRDS("gpt_output.RDS")
 }
