@@ -10,11 +10,11 @@ Sys.setenv(OPENAI_API_KEY = "...")
 objects <- dplyr::tibble(user = c("screw the world", "love the world", "the world is round"))
 
 gpt_batch(
-  objects,
-  objects$user,
+  df = objects,
+  input = objects$user,
+  prompt = "classify the sentiment using one word: 'positive', 'negative', or 'neutral'.",
   batch_size = 3,
-  temperature = 0.8,
-  "classify the sentiment using one word: 'positive', 'negative', or 'neutral'."
+  temperature = 0.8
 )
 
 objects_described <- readRDS("gpt_output.RDS")
