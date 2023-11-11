@@ -13,7 +13,7 @@ gpt_batch(
   df = objects,
   input = objects$user,
   prompt = "classify the sentiment using one word: 'positive', 'negative', or 'neutral'.",
-  batch_size = 3,
+  batch_size = 3, # batching adds a delay and saves your progress at each iteration
   temperature = 0.8
 )
 
