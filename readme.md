@@ -27,3 +27,7 @@ print(objects_described)
 # love the world     positive
 # the world is round neutral
 ```
+
+Example of batching:
+
+![](data/dylanR.gif)
