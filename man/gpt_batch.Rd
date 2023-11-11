@@ -25,7 +25,7 @@ gpt_batch(
 
 \item{attempts}{The maximum number of attempts in case of errors. Default is 1.}
 
-\item{model}{A GPT model. Default is "gpt-3.5-turbo-1106".}
+\item{model}{An OpenAI model. Default is "gpt-3.5-turbo-1106".}
 
 \item{temperature}{A temperature for the GPT model. Default is 0.1.}
 }
@@ -35,7 +35,7 @@ Writes the GPT completion to \code{gpt_output.RDS}. Writes the progress to \code
 \description{
 Using OpenAI's GPT models, generate a completion in a new data frame column called \code{gpt_output}.
 Completions are batched for handling errors and saving your progress.
-For API etiquette, there is a 2-5s delay between each completion and 30-60s delay between each batch.
+For API etiquette, there is a delay between each completion and each batch.
 }
 \examples{
 library(dylanR)

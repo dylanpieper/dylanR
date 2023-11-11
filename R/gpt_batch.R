@@ -2,14 +2,14 @@
 #'
 #' Using OpenAI's GPT models, generate a completion in a new data frame column called \code{gpt_output}.
 #' Completions are batched for handling errors and saving your progress.
-#' For API etiquette, there is a 2-5s delay between each completion and 30-60s delay between each batch.
+#' For API etiquette, there is a delay between each completion and each batch.
 #'
 #' @param df A data frame (to preserve all columns).
 #' @param input An input vector from \code{df} (to generate the completions).
 #' @param prompt A system prompt for the GPT model.
 #' @param batch_size The number of rows to process in each batch. Default is 10.
 #' @param attempts The maximum number of attempts in case of errors. Default is 1.
-#' @param model A GPT model. Default is "gpt-3.5-turbo-1106".
+#' @param model An OpenAI model. Default is "gpt-3.5-turbo-1106".
 #' @param temperature A temperature for the GPT model. Default is 0.1.
 #' @return Writes the GPT completion to \code{gpt_output.RDS}. Writes the progress to \code{last_completed_batch.RDS}.
 #' @export
@@ -58,7 +58,8 @@ gpt_batch <- function(df, input, prompt, batch_size = 10, attempts = 1,
                                        system_prompt = prompt,
                                        batch_size = batch_size,
                                        model = model,
-                                       temperature = temperature
+                                       temperature = temperature,
+                                       rows = nrow(df)
           )
           temp_output <- if (exists("output")) rbind(output, output_batch) else output_batch
           output <- temp_output[!duplicated(temp_output[[vector_name]]), ]
@@ -69,14 +70,14 @@ gpt_batch <- function(df, input, prompt, batch_size = 10, attempts = 1,
         },
         error = function(e) {
           if (counter >= attempts) {
-            stop("Maximum attempts limit reached")
+            stop("Maximum attempts limit reached, or all data has already been processed. Move or delete 'gpt_output.RDS' and 'last_completed_batch.RDS' to start a new batch.")
           } else {
             print(paste(
               "Error occurred, trying again. Data processed up to row", end_row, ": ",
               conditionMessage(e), ". Attempt: ", counter, "."
             ))
             counter <- counter + 1
-            Sys.sleep(runif(1, min = 2, max = 5))
+            Sys.sleep(runif(1, min = 1, max = 2))
           }
         }
       )
@@ -169,7 +170,6 @@ load_saved_progress <- function() {
       last_completed_batch = readRDS(file = "last_completed_batch.RDS")
     ))
   } else {
-    warning("No existing saved progress found")
     return(NULL)
   }
 }
@@ -186,11 +186,14 @@ load_saved_progress <- function() {
 #' @param batch_size The number of rows to process in each batch. Default is 100.
 #' @param model A GPT model. Default is "gpt-3.5-turbo".
 #' @param temperature A temperature for the GPT model. Default is 0.1.
+#' @param rows A placeholder for the number of rows in the whole data frame.
 #' @return The final output data frame after processing all the rows.
-batch_mutate <- function(df, df_col, system_prompt, batch_size, model, temperature) {
+batch_mutate <- function(df, df_col, system_prompt, batch_size, model, temperature, rows) {
   out <- vector("list", 0)
   rows_processed <- 0
   total_rows <- nrow(df)
+
+  num_of_batches <- ceiling(rows / batch_size)
 
   while (rows_processed < total_rows) {
     start_row <- rows_processed + 1
@@ -199,18 +202,27 @@ batch_mutate <- function(df, df_col, system_prompt, batch_size, model, temperatu
 
     for (i in start_row:end_row) {
       batch_out[[i - start_row + 1]] <- mutate_row(df[i, ], df_col[i], system_prompt,
-        model = model,
-        temperature = temperature
+                                                   model = model,
+                                                   temperature = temperature
       )
       cat("Processed row", i, "\n")
-      Sys.sleep(runif(1, min = 0.1, max = 0.5))
+      Sys.sleep(runif(1, min = 0.1, max = 0.3))
     }
 
     rows_processed <- end_row
     out <- c(out, batch_out)
+
+    if (num_of_batches > 1) {
+      message("Taking a quick break to make the API happy...")
+      pb <- txtProgressBar(min = 0, max = 100, style = 3)
+      for(i in 1:100) {
+        Sys.sleep(runif(1, min = 0.05, max = 0.15))
+        setTxtProgressBar(pb, i)
+      }
+      close(pb)
+    }
   }
 
-  Sys.sleep(runif(1, min = 30, max = 60))
   out <- do.call(rbind, out)
   return(out)
 }
