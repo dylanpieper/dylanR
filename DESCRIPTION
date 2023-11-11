@@ -4,7 +4,7 @@ Title: My Personal R Functions
 Version: 0.1.0
 Author: Dylan Pieper
 Maintainer: The package maintainer <dylanpieper@gmail.com>
-Description: I can do lots of things and document how they work.
+Description: Helping my future self and other people do things in R.
 License: use_mit_license()
 Encoding: UTF-8
 LazyData: true
