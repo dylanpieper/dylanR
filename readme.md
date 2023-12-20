@@ -28,6 +28,9 @@ print(objects_described)
 # the world is round neutral
 ```
 
+Todos
+- Remove the `df` argument and utilize the `input` argument for the data frame context
+
 Example of batching:
 
 ![](data/dylanR.gif)
