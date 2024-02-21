@@ -1,5 +1,7 @@
 # gpt_batch()
 
+Use OpenAI's GPT model to conduct natural language tasks on a data frame using the rows from a column as the input.
+
 ![](data/dylanR.png)
 
 ```{r}
@@ -27,10 +29,3 @@ print(objects_described)
 # love the world     positive
 # the world is round neutral
 ```
-
-Example of batching:
-
-![](data/dylanR.gif)
-
-Todos
-- Remove the `df` argument and utilize the `input` argument for the data frame context
