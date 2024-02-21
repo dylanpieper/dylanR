@@ -1,6 +1,6 @@
 # gpt_batch()
 
-Use OpenAI's GPT model to conduct natural language tasks on a data frame using the rows from a column as the input.
+Use OpenAI's GPT model to conduct natural language tasks using rows from a column as the input. The **batching** feature is particularly useful for completing tasks on large datasets with little to no supervision.
 
 ![](data/dylanR.png)
 
