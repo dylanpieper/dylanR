@@ -10,7 +10,7 @@ gpt_batch(
   prompt,
   batch_size = 10,
   attempts = 1,
-  model = "gpt-3.5-turbo-1106",
+  model = "gpt-3.5-turbo-0125",
   temperature = 0.1
 )
 }
@@ -25,7 +25,7 @@ gpt_batch(
 
 \item{attempts}{The maximum number of attempts in case of errors. Default is 1.}
 
-\item{model}{An OpenAI model. Default is "gpt-3.5-turbo-1106".}
+\item{model}{An OpenAI model. Default is "gpt-3.5-turbo-0125".}
 
 \item{temperature}{A temperature for the GPT model. Default is 0.1.}
 }

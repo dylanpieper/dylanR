@@ -15,7 +15,7 @@ batch_mutate(df, df_col, system_prompt, batch_size, model, temperature, rows)
 
 \item{batch_size}{The number of rows to process in each batch. Default is 100.}
 
-\item{model}{A GPT model. Default is "gpt-3.5-turbo".}
+\item{model}{A GPT model. Default is "gpt-3.5-turbo-0125".}
 
 \item{temperature}{A temperature for the GPT model. Default is 0.1.}
 

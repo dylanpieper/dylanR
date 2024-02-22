@@ -9,7 +9,7 @@
 #' @param prompt A system prompt for the GPT model.
 #' @param batch_size The number of rows to process in each batch. Default is 10.
 #' @param attempts The maximum number of attempts in case of errors. Default is 1.
-#' @param model An OpenAI model. Default is "gpt-3.5-turbo-1106".
+#' @param model An OpenAI model. Default is "gpt-3.5-turbo-0125".
 #' @param temperature A temperature for the GPT model. Default is 0.1.
 #' @return Writes the GPT completion to \code{gpt_output.RDS}. Writes the progress to \code{last_completed_batch.RDS}.
 #' @export
@@ -28,7 +28,7 @@
 #'
 #' objects_described <- readRDS("gpt_output.RDS")
 gpt_batch <- function(df, input, prompt, batch_size = 10, attempts = 1,
-                       model = "gpt-3.5-turbo-1106",
+                       model = "gpt-3.5-turbo-0125",
                        temperature = .1) {
   progress <- load_saved_progress()
 
@@ -99,7 +99,7 @@ gpt_batch <- function(df, input, prompt, batch_size = 10, attempts = 1,
 #' @param df A data frame.
 #' @param df_col A column from the data frame.
 #' @param system_prompt A system prompt for the GPT model.
-#' @param model A GPT model. Default is "gpt-3.5-turbo".
+#' @param model A GPT model. Default is "gpt-3.5-turbo-0125".
 #' @param temperature A temperature for the GPT model. Default is 0.1.
 #' @return A data frame with the mutated row.
 mutate_row <- function(df, df_col, system_prompt, model, temperature) {
@@ -184,7 +184,7 @@ load_saved_progress <- function() {
 #' @param df_col A column from the data frame.
 #' @param system_prompt A system prompt for the GPT model.
 #' @param batch_size The number of rows to process in each batch. Default is 100.
-#' @param model A GPT model. Default is "gpt-3.5-turbo".
+#' @param model A GPT model. Default is "gpt-3.5-turbo-0125".
 #' @param temperature A temperature for the GPT model. Default is 0.1.
 #' @param rows A placeholder for the number of rows in the whole data frame.
 #' @return The final output data frame after processing all the rows.

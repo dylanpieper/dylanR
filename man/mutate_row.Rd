@@ -13,7 +13,7 @@ mutate_row(df, df_col, system_prompt, model, temperature)
 
 \item{system_prompt}{A system prompt for the GPT model.}
 
-\item{model}{A GPT model. Default is "gpt-3.5-turbo".}
+\item{model}{A GPT model. Default is "gpt-3.5-turbo-0125".}
 
 \item{temperature}{A temperature for the GPT model. Default is 0.1.}
 }

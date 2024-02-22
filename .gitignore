@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+/test
+gpt_output.RDS
+last_completed_batch.RDS
